@@ -1,0 +1,57 @@
+/* FIXED INPUT */
+input, select{
+  width:100%;
+  padding:12px;
+  margin:8px 0 10px;
+  border-radius:8px;
+  border:none;
+  background:#1f2937;
+  color:white;
+  outline:none;
+}
+
+/* FIXED BUTTON */
+button{
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  background:linear-gradient(135deg,#22d3ee,#3b82f6);
+  font-weight:bold;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover{
+  background:linear-gradient(135deg,#06b6d4,#2563eb);
+}
+
+button:active{
+  transform:scale(0.96);
+}
+
+/* FIXED CARD */
+.card{
+  background:#111827;
+  padding:30px;
+  border-radius:16px;
+  width:100%;
+  max-width:380px;
+  border:1px solid #1e293b;
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
+  transition:0.3s;
+}
+
+.card:hover{
+  transform:translateY(-5px);
+  box-shadow:0 0 25px rgba(34,211,238,0.15);
+}
+
+/* FIXED RESULT CARD */
+.result-card{
+  max-width:420px;
+}
+
+/* FIREFOX SUPPORT */
+progress::-moz-progress-bar{
+  background:#22d3ee;
+}

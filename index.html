@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>SkillBridge AI</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="navbar">
+  <h2>SkillBridge AI</h2>
+  <p>AI Skill Gap Analyzer</p>
+</div>
+
+<div class="container">
+
+  <div class="card">
+
+    <div class="tab-container">
+      <div class="tab-slider" id="tabSlider"></div>
+      <button class="tab active" id="fresherTab">Fresher</button>
+      <button class="tab" id="experiencedTab">Experienced</button>
+    </div>
+
+    <div id="fresherSection" class="section">
+      <label for="skills">Enter Your Skills</label>
+      <input id="skills" placeholder="Python, SQL, Machine Learning">
+    </div>
+
+    <div id="experiencedSection" class="section hidden">
+      <label for="skillsExp">Enter Your Skills</label>
+      <input id="skillsExp" placeholder="Python, React, Node.js">
+
+      <label for="experienceYears">Years of Experience</label>
+      <input type="number" id="experienceYears" placeholder="e.g. 2">
+
+      <label for="jobRole">Previous Job Role</label>
+      <input type="text" id="jobRole" placeholder="Frontend Developer">
+    </div>
+
+    <label for="career">Select Target Career</label>
+    <select id="career">
+      <option>Data Scientist</option>
+      <option>Web Developer</option>
+      <option>AI Engineer</option>
+      <option>Cybersecurity Analyst</option>
+      <option>Data Analyst</option>
+      <option>Frontend Developer</option>
+      <option>Backend Developer</option>
+      <option>Cloud Engineer</option>
+    </select>
+
+    <label for="resumeUpload">Upload Resume</label>
+    <input type="file" id="resumeUpload" accept=".pdf,image/*">
+    <button onclick="extractSkills()">Extract Skills</button>
+
+    <label for="softSkills">Enter Soft Skills</label>
+    <input id="softSkills" placeholder="Communication, Teamwork, Leadership">
+
+    <div class="btn-group">
+      <button onclick="analyze()">Analyze Skill Gap</button>
+      <button onclick="recommendCareer()">Recommend Career</button>
+      <button onclick="showDashboard()">Progress Dashboard</button>
+      <button onclick="suggestCareers()">Suggest Careers</button>
+    </div>
+
+  </div>
+
+  <div id="output" class="card result-card"></div>
+
+  <div class="card">
+    <h3>AI Career Chatbot</h3>
+    <div id="chatbox" class="chatbox"></div>
+    <input id="chatInput" placeholder="Ask about skills, careers..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <div class="card">
+    <h3>🔥 Trending Skills</h3>
+    <ul id="trending"></ul>
+  </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="data.js" defer></script>
+<script src="ai.js" defer></script>
+<script src="script.js" defer></script>
+<script src="dashboard.js" defer></script>
+
+</body>
+</html>
