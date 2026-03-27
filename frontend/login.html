@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillBridge AI – Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:    #020617;
+      --bg-card:    #111827;
+      --bg-input:   #0d1526;
+      --accent1:    #7C3AED;
+      --accent2:    #22D3EE;
+      --text:       #E5E7EB;
+      --muted:      #9CA3AF;
+      --error:      #F87171;
+      --success:    #34D399;
+      --radius:     16px;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(ellipse at 30% 0%, #1a0a3d 0%, #0a1628 40%, var(--bg-deep) 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Animated background orbs ── */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      animation: drift 8s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    body::before {
+      width: 500px; height: 500px;
+      background: var(--accent1);
+      top: -150px; left: -150px;
+    }
+    body::after {
+      width: 400px; height: 400px;
+      background: var(--accent2);
+      bottom: -120px; right: -120px;
+      animation-delay: -4s;
+    }
+    @keyframes drift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(40px, 30px) scale(1.08); }
+    }
+
+    /* ── Floating particles ── */
+    .particles { position: fixed; inset: 0; pointer-events: none; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(124,58,237,0.5);
+      animation: float linear infinite;
+    }
+    @keyframes float {
+      from { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      to   { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── Main wrapper ── */
+    .wrapper {
+      width: 100%;
+      max-width: 440px;
+      padding: 20px;
+      z-index: 10;
+    }
+
+    /* ── Logo ── */
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: slideDown 0.6s cubic-bezier(.22,1,.36,1) both;
+    }
+    .logo h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .logo p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Card ── */
+    .card {
+      background: rgba(17,24,39,0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 24px;
+      padding: 36px 32px;
+      box-shadow: 0 0 60px rgba(124,58,237,0.12), 0 0 0 1px rgba(124,58,237,0.05);
+      animation: fadeUp 0.7s cubic-bezier(.22,1,.36,1) 0.1s both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(32px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Tab switcher ── */
+    .tab-row {
+      display: flex;
+      background: var(--bg-input);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 28px;
+      position: relative;
+    }
+    .tab-pill {
+      position: absolute;
+      top: 4px; left: 4px;
+      width: calc(50% - 4px);
+      height: calc(100% - 8px);
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      border-radius: 9px;
+      transition: transform 0.3s cubic-bezier(.22,1,.36,1);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      z-index: 2;
+      position: relative;
+      transition: color 0.2s;
+      border-radius: 9px;
+    }
+    .tab-btn.active { color: white; font-weight: 600; }
+
+    /* ── Form ── */
+    .form-section { display: none; }
+    .form-section.active {
+      display: block;
+      animation: fadeIn 0.35s ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .field { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 7px;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--muted);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px 12px 42px;
+      background: var(--bg-input);
+      border: 1.5px solid rgba(255,255,255,0.07);
+      border-radius: 11px;
+      color: var(--text);
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      border-color: var(--accent1);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+    }
+    input::placeholder { color: #4B5563; }
+
+    /* toggle password eye */
+    .eye-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 16px;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    .eye-btn:hover { color: var(--text); }
+
+    /* ── Submit button ── */
+    .submit-btn {
+      width: 100%;
+      padding: 13px;
+      margin-top: 6px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      color: white;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(124,58,237,0.4);
+    }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Shimmer on button */
+    .submit-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: -75%;
+      width: 50%; height: 200%;
+      background: rgba(255,255,255,0.15);
+      transform: skewX(-20deg);
+      transition: left 0.5s;
+    }
+    .submit-btn:hover::after { left: 125%; }
+
+    /* ── Spinner inside button ── */
+    .btn-content { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading .spinner { display: block; }
+    .loading .btn-text::after { content: 'ing...'; }
+
+    /* ── Alert box ── */
+    .alert {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+    .alert.error  { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: var(--error); }
+    .alert.success{ background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: var(--success); }
+    .alert.show   { display: flex; align-items: center; gap: 8px; }
+
+    /* ── Divider ── */
+    .divider {
+      text-align: center;
+      margin: 22px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .divider span {
+      color: var(--accent2);
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    .divider span:hover { opacity: 0.75; }
+
+    /* ── Strength bar ── */
+    .strength-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.07);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s, background 0.3s;
+    }
+
+    /* ── Footer note ── */
+    .footer-note {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #374151;
+      animation: fadeUp 0.7s 0.3s both;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Particles -->
+<div class="particles" id="particles"></div>
+
+<div class="wrapper">
+
+  <!-- Logo -->
+  <div class="logo">
+    <h1>⚡ SkillBridge AI</h1>
+    <p>Your AI-Powered Career Navigator</p>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+
+    <!-- Tab Switcher -->
+    <div class="tab-row">
+      <div class="tab-pill" id="tabPill"></div>
+      <button class="tab-btn active" id="loginTab" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" id="registerTab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- ── LOGIN FORM ── -->
+    <div class="form-section active" id="loginForm">
+
+      <div id="loginAlert" class="alert"></div>
+
+      <div class="field">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="loginEmail" placeholder="you@example.com" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="loginPassword" placeholder="Enter your password" />
+          <button class="eye-btn" onclick="toggleEye('loginPassword', this)">👁️</button>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="loginBtn" onclick="handleLogin()">
+        <div class="btn-content">
+          <div class="spinner"></div>
+          <span class="btn-text">Sign In</span>
+        </div>
+      </button>
+
+      <div class="divider">
+        Don't have an account? <span onclick="switchTab('register')">Register free</span>
+      </div>
+    </div>
+
+    <!-- ── REGISTER FORM ── -->
+    <div class="form-section" id="registerForm">
+
+      <div id="registerAlert" class="alert"></div>
+
+      <div class="field">
+        <label>Full Name</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="regName" placeholder="Your full name" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="regEmail" placeholder="you@example.com" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="regPassword" placeholder="Min. 6 characters"
+                 oninput="checkStrength(this.value)" />
+          <button class="eye-btn" onclick="toggleEye('regPassword', this)">👁️</button>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+      </div>
+
+      <button class="submit-btn" id="registerBtn" onclick="handleRegister()">
+        <div class="btn-content">
+          <div class="spinner"></div>
+          <span class="btn-text">Create Account</span>
+        </div>
+      </button>
+
+      <div class="divider">
+        Already have an account? <span onclick="switchTab('login')">Sign in</span>
+      </div>
+    </div>
+
+  </div><!-- end card -->
+
+  <div class="footer-note">🔐 Your data is safe with us · SkillBridge AI 2026</div>
+
+</div><!-- end wrapper -->
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────────
+  // 🔥 Change this to your deployed backend URL when going live
+  const API = "http://127.0.0.1:5000";
+
+  // ── PARTICLES ───────────────────────────────────────────────────
+  const container = document.getElementById("particles");
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    const size = Math.random() * 6 + 2;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random() * 100}%;
+      animation-duration:${Math.random() * 12 + 8}s;
+      animation-delay:${Math.random() * -15}s;
+      opacity:${Math.random() * 0.6 + 0.2};
+      background: ${Math.random() > 0.5 ? 'rgba(124,58,237,0.5)' : 'rgba(34,211,238,0.4)'};
+    `;
+    container.appendChild(p);
+  }
+
+  // ── TAB SWITCH ──────────────────────────────────────────────────
+  let currentTab = "login";
+
+  function switchTab(tab) {
+    currentTab = tab;
+    const pill = document.getElementById("tabPill");
+    const loginBtn = document.getElementById("loginTab");
+    const regBtn   = document.getElementById("registerTab");
+
+    if (tab === "login") {
+      pill.style.transform = "translateX(0%)";
+      loginBtn.classList.add("active");
+      regBtn.classList.remove("active");
+      document.getElementById("loginForm").classList.add("active");
+      document.getElementById("registerForm").classList.remove("active");
+    } else {
+      pill.style.transform = "translateX(100%)";
+      regBtn.classList.add("active");
+      loginBtn.classList.remove("active");
+      document.getElementById("registerForm").classList.add("active");
+      document.getElementById("loginForm").classList.remove("active");
+    }
+    clearAlerts();
+  }
+
+  // ── PASSWORD TOGGLE ─────────────────────────────────────────────
+  function toggleEye(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    inp.type = inp.type === "password" ? "text" : "password";
+    btn.textContent = inp.type === "password" ? "👁️" : "🙈";
+  }
+
+  // ── PASSWORD STRENGTH ───────────────────────────────────────────
+  function checkStrength(val) {
+    const fill = document.getElementById("strengthFill");
+    let score = 0;
+    if (val.length >= 6)  score++;
+    if (val.length >= 10) score++;
+    if (/[A-Z]/.test(val))  score++;
+    if (/[0-9]/.test(val))  score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const map = ["0%","25%","50%","75%","100%"];
+    const colors = ["#F87171","#FB923C","#FBBF24","#34D399","#22D3EE"];
+    fill.style.width  = map[Math.min(score, 4)];
+    fill.style.background = colors[Math.min(score, 4)];
+  }
+
+  // ── ALERTS ──────────────────────────────────────────────────────
+  function showAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    el.className = `alert ${type} show`;
+    el.innerHTML = `<span>${type === 'error' ? '❌' : '✅'}</span> ${msg}`;
+  }
+  function clearAlerts() {
+    ["loginAlert","registerAlert"].forEach(id => {
+      document.getElementById(id).className = "alert";
+    });
+  }
+
+  // ── LOADING STATE ────────────────────────────────────────────────
+  function setLoading(btnId, state) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = state;
+    btn.classList.toggle("loading", state);
+  }
+
+  // ── LOGIN ────────────────────────────────────────────────────────
+  async function handleLogin() {
+    const email    = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+      showAlert("loginAlert", "Please fill in all fields.", "error");
+      return;
+    }
+
+    setLoading("loginBtn", true);
+
+    try {
+      const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showAlert("loginAlert", data.error || "Login failed.", "error");
+        return;
+      }
+
+      // ✅ Save user info
+      localStorage.setItem("sb_user", JSON.stringify({ name: data.name, email: data.email }));
+
+      showAlert("loginAlert", `Welcome back, ${data.name}! Redirecting...`, "success");
+
+      setTimeout(() => { window.location.href = "index.html"; }, 1200);
+
+    } catch (err) {
+      showAlert("loginAlert", "Cannot reach server. Is backend running?", "error");
+    } finally {
+      setLoading("loginBtn", false);
+    }
+  }
+
+  // ── REGISTER ─────────────────────────────────────────────────────
+  async function handleRegister() {
+    const name     = document.getElementById("regName").value.trim();
+    const email    = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value;
+
+    if (!name || !email || !password) {
+      showAlert("registerAlert", "Please fill in all fields.", "error");
+      return;
+    }
+    if (password.length < 6) {
+      showAlert("registerAlert", "Password must be at least 6 characters.", "error");
+      return;
+    }
+
+    setLoading("registerBtn", true);
+
+    try {
+      const res = await fetch(`${API}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showAlert("registerAlert", data.error || "Registration failed.", "error");
+        return;
+      }
+
+      showAlert("registerAlert", "Account created! Please sign in.", "success");
+
+      setTimeout(() => switchTab("login"), 1500);
+
+    } catch (err) {
+      showAlert("registerAlert", "Cannot reach server. Is backend running?", "error");
+    } finally {
+      setLoading("registerBtn", false);
+    }
+  }
+
+  // ── ENTER KEY SUPPORT ─────────────────────────────────────────────
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      currentTab === "login" ? handleLogin() : handleRegister();
+    }
+  });
+
+  // ── AUTO REDIRECT IF ALREADY LOGGED IN ────────────────────────────
+  if (localStorage.getItem("sb_user")) {
+    window.location.href = "index.html";
+  }
+</script>
+
+</body>
+</html>

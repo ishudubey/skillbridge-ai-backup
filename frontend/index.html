@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>SkillBridge AI</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* ── Navbar user area ── */
+    .navbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .navbar-title { text-align: left; }
+    .navbar-title h2 { margin:0; font-size:22px; }
+    .navbar-title p  { margin:4px 0 0; font-size:13px; color:#9CA3AF; }
+
+    .user-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7C3AED, #22D3EE);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px;
+      color: white;
+      flex-shrink: 0;
+    }
+    .user-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #E5E7EB;
+    }
+    .logout-btn {
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: #A78BFA;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .logout-btn:hover {
+      background: rgba(124,58,237,0.3);
+      transform: none;
+      box-shadow: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- 🔝 NAVBAR -->
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="navbar-title">
+      <h2>⚡ SkillBridge AI</h2>
+      <p>AI Skill Gap Analyzer</p>
+    </div>
+    <div class="user-bar">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span class="user-name" id="userName">Guest</span>
+      <button class="logout-btn" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 🎯 INPUT SECTION -->
+  <div class="card">
+
+    <h2>🎯 Analyze Your Skills</h2>
+
+    <div class="tab-container">
+      <div class="tab-slider" id="tabSlider"></div>
+      <button class="tab active" id="fresherTab">Fresher</button>
+      <button class="tab" id="experiencedTab">Experienced</button>
+    </div>
+
+    <div id="fresherSection">
+      <label>Enter Your Skills</label>
+      <input id="skills" placeholder="Python, SQL, Machine Learning">
+    </div>
+
+    <div id="experiencedSection" class="hidden">
+      <label>Enter Your Skills</label>
+      <input id="skillsExp" placeholder="Python, React, Node.js">
+
+      <label>Years of Experience</label>
+      <input type="number" id="experienceYears">
+
+      <label>Previous Role</label>
+      <input type="text" id="jobRole">
+    </div>
+
+    <label>Target Career</label>
+    <select id="career"></select>
+
+    <label>Upload Resume (PDF)</label>
+    <input type="file" id="resumeUpload" accept=".pdf">
+
+    <label>Soft Skills</label>
+    <input id="softSkills" placeholder="Communication, Leadership">
+
+    <div class="btn-group">
+      <button onclick="analyze()">🔍 Analyze Resume</button>
+      <button onclick="recommendCareer()">🏆 Best Career</button>
+      <button onclick="suggestCareers()">💡 Suggest Careers</button>
+      <button onclick="showDashboard()">📊 Dashboard</button>
+    </div>
+
+  </div>
+
+  <!-- 📊 OUTPUT -->
+  <div id="output" class="card result-card"></div>
+
+  <div class="card">
+    <h3>📊 Skill Gap Visualization</h3>
+    <canvas id="skillChart"></canvas>
+  </div>
+
+  <!-- 🤖 CHAT -->
+  <div class="card">
+    <h2>🤖 AI Career Mentor</h2>
+
+    <div id="chatBox"></div>
+
+    <div style="display:flex; gap:10px;">
+      <input id="chatInput" placeholder="Ask anything about your career..." style="flex:1;" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- 🔥 TRENDING -->
+  <div class="card">
+    <h3>🔥 Trending Skills</h3>
+    <ul id="trending"></ul>
+  </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="data.js" defer></script>
+<script src="ai.js" defer></script>
+<script src="script.js" defer></script>
+<script src="dashboard.js" defer></script>
+
+<script>
+  // ── AUTH GUARD ──────────────────────────────────────────────────
+  // Runs immediately (before defer scripts) to block unauthenticated users
+  (function () {
+    const raw = localStorage.getItem("sb_user");
+    if (!raw) {
+      window.location.href = "login.html";
+      return;
+    }
+    try {
+      const user = JSON.parse(raw);
+      // Show name + avatar initial in navbar
+      document.getElementById("userName").textContent = user.name || "User";
+      const initial = (user.name || "U")[0].toUpperCase();
+      document.getElementById("userAvatar").textContent = initial;
+    } catch {
+      localStorage.removeItem("sb_user");
+      window.location.href = "login.html";
+    }
+  })();
+
+  // ── LOGOUT ──────────────────────────────────────────────────────
+  function logout() {
+    localStorage.removeItem("sb_user");
+    window.location.href = "login.html";
+  }
+
+  // ── CAREER RECOMMENDATION (used by "Best Career" button) ────────
+  function recommendCareer() {
+    if (typeof careerSkills === "undefined" || typeof calculateMatch === "undefined") {
+      document.getElementById("output").innerHTML = "⚠️ Career data not loaded yet.";
+      return;
+    }
+    const userInput = userType === "fresher"
+      ? document.getElementById("skills")?.value
+      : document.getElementById("skillsExp")?.value;
+
+    if (!userInput || !userInput.trim()) {
+      document.getElementById("output").innerHTML = "⚠️ Enter your skills first.";
+      return;
+    }
+    const userSkills = {};
+    userInput.split(',').forEach(s => {
+      userSkills[normalizeSkill(s.trim())] = "intermediate";
+    });
+
+    let best = ""; let max = 0;
+    for (let career in careerSkills) {
+      const score = calculateMatch(userSkills, careerSkills[career]);
+      if (score > max) { max = score; best = career; }
+    }
+
+    const expNote = userType === "experienced"
+      ? ` Your ${document.getElementById("experienceYears")?.value || 0} years of experience give you a head start!`
+      : "";
+
+    document.getElementById("output").innerHTML = `
+      <h2>🏆 Best Career Match</h2>
+      <p><b>${best}</b> — ${max}% match with your skills.${expNote}</p>
+      <p style="color:#9CA3AF;font-size:13px;margin-top:8px;">
+        Tip: Upload your resume and click <b>Analyze Resume</b> for a full roadmap.
+      </p>
+    `;
+  }
+</script>
+
+</body>
+</html>

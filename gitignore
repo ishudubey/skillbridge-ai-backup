@@ -1,0 +1,30 @@
+# ── Virtual Environment ──────────────────────
+venv/
+env/
+.venv/
+
+# ── Python cache ─────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ── Database (auto-created on first run) ─────
+skillbridge.db
+*.db
+*.sqlite3
+
+# ── Secret keys / environment ─────────────────
+.env
+*.env
+
+# ── OS junk files ─────────────────────────────
+.DS_Store          # Mac
+Thumbs.db          # Windows
+desktop.ini        # Windows
+
+# ── VS Code settings ──────────────────────────
+.vscode/
+
+# ── Logs ──────────────────────────────────────
+*.log
