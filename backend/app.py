@@ -1,81 +1,68 @@
-from dotenv import load_dotenv   # ✅ FIX 1: Import dotenv
-load_dotenv()                    # ✅ FIX 2: Load .env BEFORE anything else
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pdfplumber
 import os
-import sqlite3
 import hashlib
+import psycopg2
+import psycopg2.extras
 from google import genai
 
 # ──────────────────────────────────────────────
 # 🔐 Gemini client
 # ──────────────────────────────────────────────
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
-# ✅ FIX 3: Validate API key at startup so you get a clear error
-if not GOOGLE_API_KEY:
-    raise EnvironmentError(
-        "❌ GOOGLE_API_KEY not found. "
-        "Make sure your .env file exists in the backend/ folder and contains:\n"
-        "GOOGLE_API_KEY=your_actual_key_here"
-    )
-
-client = genai.Client(api_key=GOOGLE_API_KEY)
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 app = Flask(__name__)
-CORS(app)   # Allow all origins (fine for hackathon; restrict later)
+CORS(app)
 
 # ──────────────────────────────────────────────
-# 🗄️  DATABASE SETUP  (SQLite – no extra setup!)
+# 🗄️  NEON POSTGRESQL  (never resets on Render)
 # ──────────────────────────────────────────────
-DB_PATH = "skillbridge.db"
+# Set this env variable on Render dashboard:
+#   DATABASE_URL = postgresql://user:pass@host/dbname?sslmode=require
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db():
-    """Return a connection to the SQLite database."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    """Open a connection to Neon PostgreSQL."""
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
     return conn
 
 def init_db():
-    """Create tables on first run."""
-    with get_db() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                name       TEXT    NOT NULL,
-                email      TEXT    UNIQUE NOT NULL,
-                password   TEXT    NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
+    """Create tables if they don't exist (runs every startup — safe)."""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id         SERIAL PRIMARY KEY,
+                        name       TEXT    NOT NULL,
+                        email      TEXT    UNIQUE NOT NULL,
+                        password   TEXT    NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+            conn.commit()
+        print("✅ Database connected and tables ready.")
+    except Exception as e:
+        print(f"⚠️ Database init error: {e}")
 
-init_db()   # Always runs on startup – safe if tables already exist
+init_db()
 
 def hash_pw(password: str) -> str:
-    """SHA-256 hash the password."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
 # ──────────────────────────────────────────────
-# 🧠  In-memory state per user session
-#     (simple approach – good for hackathon)
+# 🧠 In-memory user profile (per session)
 # ──────────────────────────────────────────────
 chat_history = []
-
-user_profile = {
-    "skills": [],
-    "role":   ""
-}
+user_profile  = { "skills": [], "role": "" }
 
 
 # ══════════════════════════════════════════════
-#  AUTH  ROUTES
+#  AUTH ROUTES
 # ══════════════════════════════════════════════
 
-# 📝 REGISTER
 @app.route("/register", methods=["POST"])
 def register():
     data     = request.get_json(silent=True) or {}
@@ -83,7 +70,6 @@ def register():
     email    = data.get("email",    "").strip().lower()
     password = data.get("password", "")
 
-    # Validation
     if not name or not email or not password:
         return jsonify({"error": "All fields are required."}), 400
     if len(password) < 6:
@@ -93,18 +79,21 @@ def register():
 
     try:
         with get_db() as conn:
-            conn.execute(
-                "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-                (name, email, hash_pw(password))
-            )
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+                    (name, email, hash_pw(password))
+                )
             conn.commit()
         return jsonify({"message": "Account created successfully!"}), 201
 
-    except sqlite3.IntegrityError:
+    except psycopg2.errors.UniqueViolation:
         return jsonify({"error": "This email is already registered."}), 409
+    except Exception as e:
+        print("Register error:", e)
+        return jsonify({"error": "Server error. Please try again."}), 500
 
 
-# 🔑 LOGIN
 @app.route("/login", methods=["POST"])
 def login():
     data     = request.get_json(silent=True) or {}
@@ -114,100 +103,98 @@ def login():
     if not email or not password:
         return jsonify({"error": "Email and password are required."}), 400
 
-    with get_db() as conn:
-        user = conn.execute(
-            "SELECT id, name, email FROM users WHERE email = ? AND password = ?",
-            (email, hash_pw(password))
-        ).fetchone()
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT name, email FROM users WHERE email = %s AND password = %s",
+                    (email, hash_pw(password))
+                )
+                user = cur.fetchone()
 
-    if not user:
-        return jsonify({"error": "Invalid email or password."}), 401
+        if not user:
+            return jsonify({"error": "Invalid email or password."}), 401
 
-    return jsonify({
-        "message": "Login successful",
-        "name":    user["name"],
-        "email":   user["email"]
-    }), 200
+        return jsonify({
+            "message": "Login successful",
+            "name":    user["name"],
+            "email":   user["email"]
+        }), 200
+
+    except Exception as e:
+        print("Login error:", e)
+        return jsonify({"error": "Server error. Please try again."}), 500
 
 
 # ══════════════════════════════════════════════
-#  HELPER  FUNCTIONS
+#  HELPER FUNCTIONS
 # ══════════════════════════════════════════════
 
 def extract_text(file) -> str:
-    """Extract raw text from uploaded PDF resume."""
     text = ""
     try:
         with pdfplumber.open(file) as pdf:
             for page in pdf.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text.lower()
+                t = page.extract_text()
+                if t:
+                    text += t.lower()
     except Exception as e:
-        print("⚠️ PDF extract error:", e)
+        print("PDF error:", e)
     return text
 
 
 def extract_skills_ai(text: str) -> list:
-    """Use Gemini to extract skills from resume text."""
     try:
         prompt = f"""
 Extract all technical skills from this resume.
-Return ONLY a comma-separated list of skill names. No extra text.
+Return ONLY a comma-separated list. No extra text, no numbering.
 
 Resume:
 {text[:3000]}
 """
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt
+            model="gemini-2.0-flash", contents=prompt
         )
-        skills = [s.strip().lower() for s in response.text.split(",") if s.strip()]
-        return skills
-
+        return [s.strip().lower() for s in response.text.split(",") if s.strip()]
     except Exception as e:
-        print("⚠️ Gemini skill extraction failed:", e)
-        # Fallback: keyword match
+        print("Gemini skill extract error:", e)
         basics = ["python", "sql", "machine learning", "html", "css",
                   "javascript", "react", "node.js", "excel", "aws"]
         return [s for s in basics if s in text]
 
 
 def generate_roadmap_ai(skills: list, role: str) -> str:
-    """Use Gemini to generate a personalised learning roadmap."""
     try:
         prompt = f"""
 You are an expert career mentor.
 
-Target Career: {role}
+Target Career : {role}
 Current Skills: {", ".join(skills) if skills else "None"}
 
 Generate a clear, structured learning roadmap.
 
 Format each item as:
 📌 Skill Name
-   • Why it matters
-   • Best resource (1 line)
-   • Estimated timeline
+   • Why it matters for {role}
+   • Best free resource (1 line)
+   • Estimated time
 
-Keep it practical, beginner-friendly, and motivating.
+Keep it practical, specific, and beginner-friendly.
+Maximum 6 items.
 """
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt
+            model="gemini-2.0-flash", contents=prompt
         )
         return response.text
-
     except Exception as e:
-        print("⚠️ Gemini roadmap failed:", e)
-        return "Focus on Python, SQL, and Machine Learning. Build 2–3 projects and deploy them."
+        print("Gemini roadmap error:", e)
+        return f"Focus on the core skills for {role}. Build projects, deploy them, and stay consistent."
 
 
 # ══════════════════════════════════════════════
-#  CORE  FEATURE  ROUTES
+#  CORE FEATURE ROUTES
 # ══════════════════════════════════════════════
 
-# 📄 ANALYZE RESUME
 @app.route("/analyze/", methods=["POST"])
 def analyze():
     file = request.files.get("resume")
@@ -216,22 +203,15 @@ def analyze():
     if not file:
         return jsonify({"error": "No resume file uploaded."}), 400
 
-    text   = extract_text(file)
-    skills = extract_skills_ai(text)
-
-    # Save to in-memory profile
+    text    = extract_text(file)
+    skills  = extract_skills_ai(text)
     user_profile["skills"] = skills
     user_profile["role"]   = role
-
     roadmap = generate_roadmap_ai(skills, role)
 
-    return jsonify({
-        "skills":  skills,
-        "roadmap": roadmap
-    }), 200
+    return jsonify({ "skills": skills, "roadmap": roadmap }), 200
 
 
-# 🤖 CHATBOT
 @app.route("/chat/", methods=["POST"])
 def chat():
     data         = request.get_json(silent=True) or {}
@@ -243,40 +223,42 @@ def chat():
     chat_history.append(f"User: {user_message}")
 
     try:
-        history_snippet = "\n".join(chat_history[-8:])   # last 4 exchanges
-
         prompt = f"""
-You are SkillBridge AI – a friendly, expert career mentor.
+You are SkillBridge AI — a friendly, expert career mentor for Indian students.
 
-User's target role  : {user_profile["role"] or "Not set yet"}
+User's target role   : {user_profile["role"] or "Not set yet"}
 User's current skills: {", ".join(user_profile["skills"]) or "Not analysed yet"}
 
 Recent conversation:
-{history_snippet}
+{chr(10).join(chat_history[-8:])}
 
-Give a concise, personalised, actionable reply.
-Suggest specific missing skills when relevant.
-Avoid generic advice – be specific to this user's profile.
+Rules:
+- Give a DIFFERENT response each time — never repeat the same advice
+- Be specific to this user's skill profile
+- Keep it concise (3–5 lines max)
+- Be encouraging but practical
+- Mention specific tools, platforms, or resources when relevant
 """
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt
+            model="gemini-2.0-flash", contents=prompt
         )
         reply = response.text
         chat_history.append(f"AI: {reply}")
-
         return jsonify({"reply": reply}), 200
 
     except Exception as e:
-        print("⚠️ Gemini chat failed:", e)
+        print("Gemini chat error:", e)
         return jsonify({
-            "reply": "Focus on building real-world projects consistently – that's the fastest path forward!"
+            "reply": "Build real projects consistently — that's the fastest path to any tech career!"
         }), 200
 
 
-# ──────────────────────────────────────────────
-# 🚀  RUN
-# ──────────────────────────────────────────────
+# ── Health check (Render needs this) ──────────────────────────
+@app.route("/", methods=["GET"])
+def health():
+    return jsonify({"status": "SkillBridge AI backend is running ✅"}), 200
+
+
 if __name__ == "__main__":
     print("✅ SkillBridge AI backend running at http://127.0.0.1:5000")
     app.run(debug=True, host="0.0.0.0", port=5000)
