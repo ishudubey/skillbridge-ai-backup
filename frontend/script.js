@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════
 
 // 🔧 Change this ONE place when deploying
-const BACKEND = "https://skillbridge-ai.onrender.com";  // ← your Render URL
+const BACKEND = "https://skillbridge-ai-0000.onrender.com/";  // ← your Render URL
 
 // 🌍 Global user type
 let userType = "fresher";
