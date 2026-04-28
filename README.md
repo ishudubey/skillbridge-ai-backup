@@ -394,9 +394,6 @@ Scalable vision
 GitHub:
 https://github.com/ishudubey/skillbridge-ai-backup/tree/ADVANCED
 
-Demo Video:
-https://drive.google.com/file/d/1p4o7VhH_wcdylFZ078GTT0FUMvnDe2NL/view
-
 Live Product: (add link)
 
 🔥 CLOSING
