@@ -270,9 +270,6 @@ Skill match %
 Missing skills
 Learning roadmap
 
-🎥 Demo Video:
-https://drive.google.com/file/d/1p4o7VhH_wcdylFZ078GTT0FUMvnDe2NL/view
-
 🤖 AI ENGINE
 
 “We combine logic + AI for intelligent career guidance”
