@@ -2,7 +2,7 @@
 ### *AI Powered Career Guidance & Skill Gap Analyzer*
 
 🌐 **Live Demo:** https://skillbridge-ai-ishu.netlify.app/  
-📦 **Repository:** https://github.com/ishudubey/skillbridge-ai-backup  
+📦 **Repository:** https://github.com/ishudubey/skillbridge-ai-backup/tree/ADVANCED 
 
 ---
 
